@@ -225,11 +225,64 @@ on co.country_id = cas.country_id
 -- * 7h. List the top five genres in gross revenue in descending order. 
 -- (**Hint**: you may need to use the following tables: category, film_category, inventory, payment, 
 -- and rental.)
+select c.name, fcirpg.total
+from category as c
+join (	select fc.category_id, sum(irpg.total) as total
+		from film_category as fc
+		join (	select i.film_id, sum(rpg.total) as total
+				from inventory as i
+				join (	select r.inventory_id, sum(pg.total) as total
+						from rental as r
+						join (	select rental_id, sum(amount) as total
+								from payment
+								group by rental_id
+							  ) as pg
+						on r.rental_id = pg.rental_id
+						group by inventory_id
+					 ) as rpg
+				on i.inventory_id = rpg.inventory_id
+				group by i.film_id
+			 ) as irpg
+		on fc.film_id = irpg.film_id
+		group by fc.category_id 
+	) as fcirpg
+on c.category_id = fcirpg.category_id
+order by fcirpg.total DESC
+limit 5;
+
+
 
 -- * 8a. In your new role as an executive, you would like to have an easy way of viewing the Top five 
 -- genres by gross revenue. Use the solution from the problem above to create a view. 
 -- If you haven't solved 7h, you can substitute another query to create a view.
+create view best_cat_v
+as select c.name, fcirpg.total
+from category as c
+join (	select fc.category_id, sum(irpg.total) as total
+		from film_category as fc
+		join (	select i.film_id, sum(rpg.total) as total
+				from inventory as i
+				join (	select r.inventory_id, sum(pg.total) as total
+						from rental as r
+						join (	select rental_id, sum(amount) as total
+								from payment
+								group by rental_id
+							  ) as pg
+						on r.rental_id = pg.rental_id
+						group by inventory_id
+					 ) as rpg
+				on i.inventory_id = rpg.inventory_id
+				group by i.film_id
+			 ) as irpg
+		on fc.film_id = irpg.film_id
+		group by fc.category_id 
+	) as fcirpg
+on c.category_id = fcirpg.category_id
+order by fcirpg.total DESC
+limit 5;
 
 -- * 8b. How would you display the view that you created in 8a?
+SELECT * FROM best_cat_v;
 
 -- * 8c. You find that you no longer need the view `top_five_genres`. Write a query to delete it.
+DROP VIEW best_cat_v
